@@ -1,0 +1,1 @@
+Your write-up goes here -- markdown, slides, a notebook, or another format of your choosing (no more than 2 pages / 3 slides equivalent). If it's hosted elsewhere (e.g. a slides link), put the link in this file instead.
