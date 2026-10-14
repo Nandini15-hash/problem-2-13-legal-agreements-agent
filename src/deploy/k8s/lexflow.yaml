@@ -1,0 +1,66 @@
+# kubectl apply -f src/deploy/k8s/lexflow.yaml   (EKS / GKE / AKS / k3s / OpenShift)
+apiVersion: v1
+kind: Namespace
+metadata: { name: lexflow }
+---
+apiVersion: v1
+kind: Secret
+metadata: { name: lexflow, namespace: lexflow }
+stringData:
+  DATABASE_URL: postgresql+psycopg2://lexflow:CHANGE@postgres.example.internal:5432/lexflow
+  LEXFLOW_API_KEY: CHANGE
+  LEXFLOW_HOOK_SECRET: CHANGE
+  CLAUDE_KEY: ""                       # optional: enables the LLM reasoning layer
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: lexflow, namespace: lexflow }
+data:
+  LEXFLOW_BASE_URL: https://contracts.example.com
+  LEXFLOW_HOOKS: console,webhook:https://hooks.example.com/lexflow
+  LEXFLOW_MODE: auto
+  LEXFLOW_REDACT_PII: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: lexflow, namespace: lexflow }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: lexflow } }
+  template:
+    metadata: { labels: { app: lexflow } }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 10001 }
+      containers:
+        - name: app
+          image: ghcr.io/YOUR_ORG/lexflow:0.1.0
+          ports: [{ containerPort: 8080 }]
+          envFrom: [{ secretRef: { name: lexflow } }, { configMapRef: { name: lexflow } }]
+          readinessProbe: { httpGet: { path: /readyz, port: 8080 } }
+          livenessProbe: { httpGet: { path: /healthz, port: 8080 } }
+          resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { cpu: "1", memory: 1Gi } }
+          volumeMounts: [{ name: data, mountPath: /data }]
+      volumes: [{ name: data, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: lexflow, namespace: lexflow }
+spec:
+  selector: { app: lexflow }
+  ports: [{ port: 80, targetPort: 8080 }]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: { name: lexflow-reminders, namespace: lexflow }
+spec:
+  schedule: "15 8 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: remind
+              image: ghcr.io/YOUR_ORG/lexflow:0.1.0
+              command: ["python", "-m", "lexflow.cli", "remind"]
+              envFrom: [{ secretRef: { name: lexflow } }, { configMapRef: { name: lexflow } }]

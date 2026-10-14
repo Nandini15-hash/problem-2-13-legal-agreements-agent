@@ -1,19 +1,27 @@
-# Fill this in before you submit -- our evaluator runs these commands
-# EXACTLY as written, in this order, from a fresh checkout of your fork.
-# Keep every command non-interactive (no prompts) and idempotent.
+# LexFlow — legal agreements agent. Commands run from the repo root of a fresh checkout.
 
 setup_commands:
   - "pip install -r requirements.txt"
-  # - add every other setup step here, in order (env vars, downloads, etc.)
 
 run_commands:
-  - "python src/main.py --help"
-  # - the real command(s) that actually run your solution
+  # End-to-end workflow on 9 sample agreements (one per contract type + a prompt-injection attempt):
+  # intake -> classify -> extract terms (with quotes) -> playbook risk review -> route ->
+  # human approval -> built-in e-signature -> obligations & reminders -> portfolio Q&A ->
+  # audit hash-chain check. Prints every step and exits 0.
+  - "python src/main.py demo"
+  # Evaluation: rules vs hybrid (LLM) on 64 templated + 62 held-out labelled contracts.
+  # --no-live replays the committed `claude -p` answers, so results reproduce without a key.
+  - "python src/main.py eval --no-live"
 
-test_commands: []
-  # optional -- commands that run your own tests/checks, if you have any
+test_commands:
+  - "python -m pytest"
 
-notes: ""
-  # anything we should know before running this (e.g. "needs a GPU",
-  # "takes about 10 minutes", "expects a sample dataset already present
-  # under data/, see docs/ for where to get it")
+notes: >-
+  Python 3.10+. No database server, Docker or API key required (SQLite; finishes in seconds).
+  Reasoning layer: if CLAUDE_KEY is set and the `claude` CLI is on PATH, contract analysis calls
+  `claude -p` live (about 15 s per new contract); otherwise the demo replays recorded claude -p
+  answers and falls back to deterministic rules. A live LLM eval is `python src/main.py eval`
+  (~126 calls, a few minutes with 8 in parallel). Web UI + API: `python src/main.py serve`, then
+  open http://localhost:8080 (OpenAPI at /docs). MCP server: `python src/main.py mcp`.
+  Deployment: src/Dockerfile, src/deploy/docker-compose.yml (on-prem), src/deploy/k8s/ (cloud).
+  Design write-up: docs/SUMMARY.md; eval results: docs/eval_report.md.

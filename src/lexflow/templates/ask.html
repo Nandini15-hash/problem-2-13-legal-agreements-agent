@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card">
+  <h1>Ask the portfolio</h1>
+  <form><input name="q" value="{{ q }}" size="70" placeholder="e.g. Which SaaS contracts auto-renew in the next 90 days?"> <button>Ask</button></form>
+  <p class="muted small">The agent turns your question into a structured filter; answers always come from the database, never from the model's memory.</p>
+</div>
+{% if res %}
+<div class="card">
+  <h2>{{ res.answer }}</h2>
+  <div class="muted small">parsed by {{ res.parser }}: <code>{{ res.filter }}</code></div>
+  <table><tr><th>Agreement</th><th>Counterparty</th><th>Type</th><th>Status</th><th>Risk</th><th>Value</th><th>Next deadline</th></tr>
+  {% for r in res.results %}<tr><td><a href="/contracts/{{ r.id }}">{{ r.title }}</a></td><td>{{ r.counterparty }}</td><td>{{ r.type }}</td><td>{{ r.status }}</td><td>{{ r.risk }}</td><td>{{ '${:,}'.format(r.value) if r.value else '—' }}</td><td>{{ r.next_deadline or r.end_date or '—' }}</td></tr>{% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

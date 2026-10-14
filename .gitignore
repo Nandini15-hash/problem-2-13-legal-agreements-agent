@@ -1,7 +1,9 @@
-__pycache__/
-*.pyc
 .venv/
-venv/
-.env
-node_modules/
-.DS_Store
+__pycache__/
+*.db
+*.db-wal
+*.db-shm
+.pytest_cache/
+.lexflow-cache/
+src/lexflow/evals/data/.paraphrase_cache/
+docs/*.errors.json

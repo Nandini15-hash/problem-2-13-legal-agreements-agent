@@ -1,0 +1,32 @@
+# Self-hosted / on-prem:  docker compose -f src/deploy/docker-compose.yml up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: lexflow, POSTGRES_PASSWORD: lexflow, POSTGRES_DB: lexflow }
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U lexflow"], interval: 3s, retries: 20 }
+
+  app:
+    build: ..
+    ports: ["8080:8080"]
+    environment: &env
+      DATABASE_URL: postgresql+psycopg2://lexflow:lexflow@db:5432/lexflow
+      LEXFLOW_BASE_URL: http://localhost:8080
+      LEXFLOW_API_KEY: ${LEXFLOW_API_KEY:-change-me}
+      LEXFLOW_HOOK_SECRET: ${LEXFLOW_HOOK_SECRET:-change-me-too}
+      LEXFLOW_HOOKS: console,file:/data/outbox.jsonl${LEXFLOW_EXTRA_HOOKS:-}
+      LEXFLOW_MODE: auto                # uses claude -p when CLAUDE_KEY is set, rules otherwise
+      CLAUDE_KEY: ${CLAUDE_KEY:-}
+    volumes: [data:/data]
+    depends_on: { db: { condition: service_healthy } }
+
+  # Daily obligations agent (renewal / expiry reminders)
+  reminders:
+    build: ..
+    environment: *env
+    entrypoint: ["sh", "-c", "while true; do python -m lexflow.cli remind; sleep 86400; done"]
+    depends_on: [app]
+
+volumes:
+  pgdata:
+  data:

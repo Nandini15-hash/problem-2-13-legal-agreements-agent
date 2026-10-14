@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ c.title }} · LexFlow{% endblock %}
+{% block body %}
+<div class="card">
+  <h1>{{ c.title }}</h1>
+  <div class="muted">{{ a.contract_type }} (confidence {{ a.type_confidence }}) · {{ c.counterparty or 'unknown counterparty' }} ·
+    <span class="pill" style="background:{{ risk_color(c.risk_level) }}">{{ c.risk_level }} risk</span>
+    <span class="status">{{ c.status.replace('_', ' ') }}</span> · analysed with <b>{{ a.mode }}</b></div>
+  <p>{{ a.summary }}</p>
+</div>
+
+<div class="grid">
+<div>
+  <div class="card">
+    <h2>Key terms <span class="muted small">(every value is backed by a quote from the document)</span></h2>
+    <table>
+      {% for k, v in a.fields.items() if k != 'signers' %}
+      <tr><td class="muted" style="width:32%">{{ k.replace('_', ' ') }}</td>
+          <td><b>{{ v if v not in (None, []) else '—' }}</b>
+          {% if a.evidence.get(k) %}<blockquote>“{{ a.evidence[k] }}”</blockquote>{% endif %}</td></tr>
+      {% endfor %}
+      <tr><td class="muted">signers</td><td>{% for s in a.fields.signers %}{{ s.name }} <span class="muted small">{{ s.email }} · {{ s.party }}</span><br>{% endfor %}</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Document</h2>
+    <div class="muted small">SHA-256 {{ c.sha256 }}</div>
+    <pre class="doc">{{ c.text }}</pre>
+  </div>
+</div>
+
+<div>
+  <div class="card">
+    <h2>Risk flags</h2>
+    {% for f in a.flags %}
+      <div class="flag"><span class="pill" style="background:{{ risk_color(f.severity) }}">{{ f.severity }}</span>
+        <b>{{ f.rule_id }}</b> <span class="muted small">({{ 'LLM · advisory, not used for routing' if f.source == 'llm' else f.source }})</span><div>{{ f.message }}</div>
+        {% if f.evidence %}<blockquote>“{{ f.evidence }}”</blockquote>{% endif %}</div>
+    {% else %}<p class="muted">No issues against the playbook.</p>{% endfor %}
+  </div>
+
+  <div class="card">
+    <h2>Routing: {{ a.route.decision.replace('_', ' ') }}</h2>
+    {% for r in a.route.reasons %}<div class="small">• {{ r }}</div>{% endfor %}
+    {% for ap in c.approvals %}
+      <div class="flag"><b>{{ ap.role }}</b> → {{ ap.assignee }} · <span class="status">{{ ap.decision }}</span>
+        {% if ap.decided_by %}<span class="muted small">by {{ ap.decided_by }}{% if ap.comment %}: “{{ ap.comment }}”{% endif %}</span>{% endif %}
+        {% if ap.decision == 'pending' %}
+        <form method="post" action="/contracts/{{ c.id }}/decide" style="margin-top:6px">
+          <input type="hidden" name="role" value="{{ ap.role }}">
+          <input name="actor" placeholder="your email" required size="18">
+          <input name="comment" placeholder="comment" size="14">
+          <button name="decision" value="approve">Approve</button>
+          <button class="ghost" name="decision" value="reject">Reject</button>
+        </form>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% for env in c.envelopes %}
+  <div class="card">
+    <h2>Signature envelope <span class="status">{{ env.status }}</span></h2>
+    {% for r in env.recipients %}
+      <div class="flag">{{ r.order }}. <b>{{ r.name }}</b> <span class="muted small">{{ r.email }}</span> · <span class="status">{{ r.status }}</span>
+        {% if r.signed_at %}<div class="small muted">signed {{ r.signed_at.strftime('%Y-%m-%d %H:%M UTC') }} from {{ r.ip }}</div>{% endif %}
+        {% if links.get(r.email) and r.status in ('sent', 'viewed', 'waiting') %}<div class="small">demo link (normally e-mailed): <a href="{{ links[r.email] }}">open signing page</a></div>{% endif %}
+      </div>
+    {% endfor %}
+    {% if env.status == 'completed' %}<p><a class="btn" href="/certificate/{{ env.id }}">Completion certificate</a></p>{% endif %}
+  </div>
+  {% endfor %}
+
+  {% if c.obligations %}
+  <div class="card"><h2>Obligations</h2>
+    {% for o in c.obligations %}<div class="flag"><b>{{ o.due_date }}</b> · {{ o.kind.replace('_', ' ') }} <span class="status">{{ o.status }}</span><div class="small muted">{{ o.description }}</div></div>{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Agent trace</h2>
+    {% for s in a.trace %}<div class="small"><b>{{ s.agent }}</b> {{ s.detail }} <span class="muted">{{ s.ms }} ms{% if s.llm_calls %} · {{ s.llm_calls }} LLM call{% endif %}</span></div>{% endfor %}
+  </div>
+
+  <div class="card">
+    <h2>Audit trail <span class="small" style="color:{{ '#2e7d32' if chain_ok else '#c62828' }}">{{ '✔ hash chain intact' if chain_ok else '✘ chain broken' }}</span></h2>
+    {% for e in events %}<div class="small"><span class="muted">{{ e.ts.strftime('%m-%d %H:%M:%S') }}</span> <b>{{ e.type }}</b> by {{ e.actor }}</div>{% endfor %}
+  </div>
+</div>
+</div>
+{% endblock %}

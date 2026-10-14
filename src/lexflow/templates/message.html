@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card"><h1>{{ title }}</h1><p>{{ msg }}</p>
+{% if cert %}<p><a class="btn" href="/certificate/{{ cert }}">View completion certificate</a></p>{% endif %}</div>
+{% endblock %}

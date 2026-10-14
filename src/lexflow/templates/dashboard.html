@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block headright %}<span class="muted small">{{ company }} · reasoning: {{ mode }}</span>{% endblock %}
+{% block body %}
+<div class="kpis">
+  {% for k, v in counts.items() %}<div class="kpi"><b>{{ v }}</b><span class="muted small">{{ k.replace('_', ' ') }}</span></div>{% endfor %}
+</div>
+<div class="grid">
+  <div class="card">
+    <h2>Agreements</h2>
+    <table>
+      <tr><th>Agreement</th><th>Type</th><th>Counterparty</th><th>Risk</th><th>Status</th><th>Value</th><th>Ends</th></tr>
+      {% for c in contracts %}
+      <tr>
+        <td><a href="/contracts/{{ c.id }}">{{ c.title }}</a><div class="muted small">{{ c.filename or c.source }}</div></td>
+        <td>{{ c.contract_type }}</td>
+        <td>{{ c.counterparty or '—' }}</td>
+        <td><span class="pill" style="background:{{ risk_color(c.risk_level) }}">{{ c.risk_level }}</span></td>
+        <td><span class="status">{{ c.status.replace('_', ' ') }}</span></td>
+        <td>{{ '${:,}'.format(c.value) if c.value else '—' }}</td>
+        <td>{{ c.end_date or '—' }}</td>
+      </tr>
+      {% else %}<tr><td colspan="7" class="muted">No agreements yet. Upload one →</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div>
+    <div class="card">
+      <h2>Upload an agreement</h2>
+      <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".txt,.md,.pdf,.docx" required>
+        <p><button>Review it</button></p>
+        <p class="muted small">The review crew classifies, extracts terms, checks the playbook and routes it for approval or signature.</p>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Upcoming deadlines</h2>
+      {% for o, c in upcoming %}
+        <div class="flag"><b>{{ o.due_date }}</b> · <a href="/contracts/{{ c.id }}">{{ c.counterparty }}</a><div class="small muted">{{ o.description }}</div></div>
+      {% else %}<p class="muted small">Deadlines appear once agreements are executed.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

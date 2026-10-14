@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}LexFlow{% endblock %}</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b1f24; --muted:#5f6b7a; --line:#e2e5ea; --accent:#2747c9; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111418; --card:#1a1e24; --ink:#e7e9ec; --muted:#9aa3ad; --line:#2b3139; --accent:#8aa2ff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  a { color: var(--accent); text-decoration: none; }
+  header { display:flex; align-items:center; gap:18px; padding:12px 24px; background:var(--card); border-bottom:1px solid var(--line); }
+  header .brand { font-weight:700; font-size:17px; }
+  header nav { display:flex; gap:14px; flex:1; }
+  main { max-width:1200px; margin:22px auto; padding:0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin-bottom:16px; }
+  h1 { font-size:22px; margin:0 0 6px; } h2 { font-size:16px; margin:0 0 10px; }
+  table { width:100%; border-collapse:collapse; } th, td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+  .pill { display:inline-block; padding:1px 9px; border-radius:10px; font-size:12px; color:#fff; }
+  .status { display:inline-block; padding:1px 9px; border-radius:10px; font-size:12px; background:var(--bg); border:1px solid var(--line); }
+  .muted { color:var(--muted); } .small { font-size:12px; }
+  .grid { display:grid; grid-template-columns: 2fr 1fr; gap:16px; }
+  .kpis { display:grid; grid-template-columns: repeat(6, 1fr); gap:10px; margin-bottom:16px; }
+  .kpi { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px; text-align:center; }
+  .kpi b { display:block; font-size:22px; }
+  button, .btn { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:6px 14px; cursor:pointer; font:inherit; }
+  button.ghost { background:transparent; color:var(--accent); border:1px solid var(--line); }
+  input, textarea, select { font:inherit; color:inherit; background:var(--card); border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
+  blockquote { margin:4px 0; padding:4px 10px; border-left:3px solid var(--line); color:var(--muted); font-size:13px; }
+  pre.doc { white-space:pre-wrap; font:13px/1.55 ui-serif, Georgia, serif; background:var(--bg); padding:16px; border-radius:8px; max-height:520px; overflow:auto; }
+  .flag { padding:6px 0; border-bottom:1px dashed var(--line); }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .kpis { grid-template-columns: repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">⚖ LexFlow</div>
+  <nav><a href="/">Contracts</a><a href="/ask">Ask</a><a href="/docs">API</a></nav>
+  {% block headright %}{% endblock %}
+</header>
+<main>{% block body %}{% endblock %}</main>
+</body>
+</html>

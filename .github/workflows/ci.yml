@@ -1,0 +1,22 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: lexflow, POSTGRES_PASSWORD: lexflow, POSTGRES_DB: lexflow }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r src/requirements.txt
+      - run: python -m pytest
+      - run: python -m pytest
+        env: { TEST_DATABASE_URL: "postgresql+psycopg2://lexflow:lexflow@localhost:5432/lexflow" }
+      - run: python src/main.py demo --mode rules
+      - run: python src/main.py eval --no-live
+      - run: docker build --build-arg WITH_CLAUDE=0 -t lexflow src/

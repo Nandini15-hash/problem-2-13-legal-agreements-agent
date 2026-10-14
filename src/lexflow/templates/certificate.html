@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Certificate of completion{% endblock %}
+{% block body %}
+<div class="card">
+  <h1>Certificate of completion</h1>
+  <table>
+    <tr><td class="muted">Agreement</td><td><b>{{ env.contract.title }}</b></td></tr>
+    <tr><td class="muted">Envelope</td><td>{{ env.id }} ({{ env.provider }})</td></tr>
+    <tr><td class="muted">Document SHA-256</td><td><code>{{ env.doc_sha256 }}</code></td></tr>
+    <tr><td class="muted">Sent</td><td>{{ env.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td></tr>
+    <tr><td class="muted">Completed</td><td>{{ env.completed_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td></tr>
+    <tr><td class="muted">Audit chain</td><td style="color:{{ '#2e7d32' if chain_ok else '#c62828' }}">{{ 'intact' if chain_ok else 'BROKEN' }}</td></tr>
+  </table>
+</div>
+<div class="card">
+  <h2>Signers</h2>
+  <table><tr><th>#</th><th>Name</th><th>Email</th><th>Signature</th><th>Signed at</th><th>IP</th></tr>
+  {% for r in env.recipients %}<tr><td>{{ r.order }}</td><td>{{ r.name }}<div class="muted small">{{ r.title }} · {{ r.party }}</div></td><td>{{ r.email }}</td>
+    <td style="font-family:cursive;font-size:18px">{{ r.signature or '' }}</td><td>{{ r.signed_at.strftime('%Y-%m-%d %H:%M:%S') if r.signed_at else '' }}</td><td>{{ r.ip or '' }}</td></tr>{% endfor %}
+  </table>
+</div>
+<div class="card">
+  <h2>Envelope events</h2>
+  {% for e in events %}<div class="small"><b>{{ e.type }}</b> by {{ e.actor }} at {{ e.ts.strftime('%Y-%m-%d %H:%M:%S') }} · <code class="muted">{{ e.hash[:16] }}…</code></div>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="lexflow" name="LexFlow workflow">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="src" value="Connectors (in)" style="swimlane;rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="60" width="210" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="s1" value="Web upload (.pdf .docx .txt)" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="src"><mxGeometry x="15" y="40" width="180" height="40" as="geometry"/></mxCell>
+        <mxCell id="s2" value="REST API (X-API-Key)" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="src"><mxGeometry x="15" y="95" width="180" height="40" as="geometry"/></mxCell>
+        <mxCell id="s3" value="Signed webhook (HMAC)&#xa;CRM / Drive / e-mail relays" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="src"><mxGeometry x="15" y="150" width="180" height="50" as="geometry"/></mxCell>
+        <mxCell id="s4" value="Folder watcher (CLI ingest)" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="src"><mxGeometry x="15" y="215" width="180" height="40" as="geometry"/></mxCell>
+        <mxCell id="s5" value="MCP server (other agents)" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="src"><mxGeometry x="15" y="270" width="180" height="40" as="geometry"/></mxCell>
+
+        <mxCell id="crew" value="Review crew (reasoning)" style="swimlane;rounded=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="60" width="560" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="a1" value="Intake&#xa;text, SHA-256,&#xa;injection scan" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="crew"><mxGeometry x="15" y="45" width="95" height="70" as="geometry"/></mxCell>
+        <mxCell id="a2" value="Classifier&#xa;playbook keywords&#xa;(+LLM if unsure)" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="crew"><mxGeometry x="122" y="45" width="100" height="70" as="geometry"/></mxCell>
+        <mxCell id="a3" value="Extractor&#xa;rules + 1× claude -p&#xa;value + verbatim quote" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="crew"><mxGeometry x="234" y="45" width="110" height="70" as="geometry"/></mxCell>
+        <mxCell id="a4" value="Risk reviewer&#xa;playbook rules&#xa;+ advisory LLM risks" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="crew"><mxGeometry x="356" y="45" width="100" height="70" as="geometry"/></mxCell>
+        <mxCell id="a5" value="Router&#xa;policy only" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="crew"><mxGeometry x="468" y="45" width="80" height="70" as="geometry"/></mxCell>
+        <mxCell id="g" value="GUARDRAILS: untrusted-document prompt · grounding (quote must exist) · LLM can't lower risk or route · injection → blocked · PII redaction option · call budget + cache + timeout" style="rounded=1;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="crew"><mxGeometry x="15" y="135" width="533" height="45" as="geometry"/></mxCell>
+        <mxCell id="pb" value="Playbook YAML (policy as data): contract types, required fields, clause checks, rules, routing, approvers, thresholds" style="shape=note;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="crew"><mxGeometry x="15" y="195" width="260" height="60" as="geometry"/></mxCell>
+        <mxCell id="ev" value="Evals: 64 templated + 62 held-out (Claude-paraphrased) contracts · field P/R · flag F1 · route acc · unsafe auto-approve = 0" style="shape=note;whiteSpace=wrap;fillColor=#f5f5f5;fontSize=11;" vertex="1" parent="crew"><mxGeometry x="290" y="195" width="258" height="60" as="geometry"/></mxCell>
+        <mxCell id="ea1" style="endArrow=block;" edge="1" parent="crew" source="a1" target="a2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ea2" style="endArrow=block;" edge="1" parent="crew" source="a2" target="a3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ea3" style="endArrow=block;" edge="1" parent="crew" source="a3" target="a4"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ea4" style="endArrow=block;" edge="1" parent="crew" source="a4" target="a5"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="act" value="Actions (gated)" style="swimlane;rounded=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="900" y="60" width="300" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1" value="auto_approve → send for signature" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="act"><mxGeometry x="15" y="40" width="270" height="35" as="geometry"/></mxCell>
+        <mxCell id="d2" value="review → approval tasks (legal / GC / finance) → human decides" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="act"><mxGeometry x="15" y="85" width="270" height="45" as="geometry"/></mxCell>
+        <mxCell id="d3" value="blocked → security + GC; sending refused" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="act"><mxGeometry x="15" y="140" width="270" height="35" as="geometry"/></mxCell>
+        <mxCell id="d4" value="Signing: built-in e-sign (order, consent, typed name = signer, doc-hash check, IP) or external provider via webhook" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="act"><mxGeometry x="15" y="185" width="270" height="60" as="geometry"/></mxCell>
+        <mxCell id="d5" value="Executed → obligations agent: renewal-notice deadline, expiry; reminders at 90/30/7 days" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="act"><mxGeometry x="15" y="255" width="270" height="55" as="geometry"/></mxCell>
+
+        <mxCell id="out" value="Hooks (out)" style="swimlane;rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="60" width="200" height="330" as="geometry"/>
+        </mxCell>
+        <mxCell id="o1" value="Webhook (HMAC-signed)" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="out"><mxGeometry x="15" y="40" width="170" height="40" as="geometry"/></mxCell>
+        <mxCell id="o2" value="Slack" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="out"><mxGeometry x="15" y="95" width="170" height="40" as="geometry"/></mxCell>
+        <mxCell id="o3" value="JSONL outbox" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="out"><mxGeometry x="15" y="150" width="170" height="40" as="geometry"/></mxCell>
+        <mxCell id="o4" value="Portfolio Q&amp;A (LLM → filter → DB rows)" style="rounded=1;whiteSpace=wrap;" vertex="1" parent="out"><mxGeometry x="15" y="205" width="170" height="50" as="geometry"/></mxCell>
+
+        <mxCell id="db" value="SQLite / Postgres&#xa;contracts · approvals · envelopes · obligations&#xa;hash-chained audit log" style="shape=cylinder3;whiteSpace=wrap;boundedLbl=1;size=15;fillColor=#f5f5f5;" vertex="1" parent="1">
+          <mxGeometry x="600" y="440" width="320" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e1" style="endArrow=block;" edge="1" parent="1" source="src" target="crew"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" style="endArrow=block;" edge="1" parent="1" source="crew" target="act"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" value="events" style="endArrow=block;" edge="1" parent="1" source="act" target="out"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" style="endArrow=block;startArrow=block;" edge="1" parent="1" source="act" target="db"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" style="endArrow=block;startArrow=block;" edge="1" parent="1" source="crew" target="db"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

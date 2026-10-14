@@ -1,0 +1,164 @@
+# LexFlow playbook: the company's legal policy as data.
+# Supporting a new contract type = add a block under `types:`. No code changes.
+#
+# Rule conditions are declarative (no eval): a list of {field, op, value} that must ALL hold.
+#   ops: is_null, not_null, is_true, is_false, eq, ne, lt, gt, in, not_in
+# Clause checks look for any of `patterns` (case-insensitive regex) in the document text.
+
+company:
+  name: Northwind Labs, Inc.
+  aliases: [Northwind Labs, Northwind]
+  allowed_governing_law: [Delaware, California, New York, England and Wales]
+  approvers:            # role -> who gets the approval request (hook target)
+    legal: legal@northwind.example
+    gc: general.counsel@northwind.example
+    finance: finance@northwind.example
+    security: security@northwind.example
+  default_signer: {name: Dana Whitfield, title: Chief Executive Officer, email: dana@northwind.example}
+  thresholds:
+    finance_review_value: 250000      # contracts above this USD value also need finance
+  reminders:
+    renewal_lead_days: [90, 30, 7]    # notify this many days before the notice deadline
+
+routing:
+  # risk level -> decision + approver roles (policy, never decided by the LLM)
+  none:     {decision: auto_approve, approvers: []}
+  low:      {decision: auto_approve, approvers: []}
+  medium:   {decision: review, approvers: [legal]}
+  high:     {decision: review, approvers: [legal, gc]}
+  critical: {decision: blocked, approvers: [security, gc]}
+
+common_rules:
+  - id: unlimited_liability
+    severity: high
+    message: Liability is uncapped.
+    when: [{field: liability_cap, op: eq, value: unlimited}]
+  - id: governing_law_not_allowed
+    severity: medium
+    message: Governing law is outside the approved list.
+    when: [{field: governing_law, op: not_null}, {field: governing_law, op: not_in, value: $allowed_governing_law}]
+  - id: long_renewal_notice
+    severity: medium
+    message: Auto-renews and needs more than 60 days' notice to cancel.
+    when: [{field: auto_renewal, op: is_true}, {field: renewal_notice_days, op: gt, value: 60}]
+  - id: long_initial_term
+    severity: medium
+    message: Initial term is longer than 36 months.
+    when: [{field: term_months, op: gt, value: 36}]
+  - id: slow_payment_terms
+    severity: low
+    message: Payment terms longer than 45 days.
+    when: [{field: payment_terms_days, op: gt, value: 45}]
+
+types:
+  nda:
+    title: Non-Disclosure Agreement
+    detect: ["non-disclosure", "nondisclosure", "confidential information", "receiving party", "disclosing party"]
+    required_fields: [parties, effective_date, governing_law, confidentiality_years]
+    rules:
+      - id: short_confidentiality
+        severity: medium
+        message: Confidentiality lasts less than 2 years.
+        when: [{field: confidentiality_years, op: lt, value: 2}]
+    clauses:
+      - id: missing_return_of_materials
+        severity: low
+        message: No obligation to return or destroy confidential materials.
+        patterns: ["return or destroy", "return or (?:securely )?destroy"]
+
+  msa:
+    title: Master Services Agreement
+    detect: ["master services agreement", "statements of work", "services agreement", "service provider"]
+    required_fields: [parties, effective_date, term_months, governing_law, liability_cap]
+    rules:
+      - id: missing_liability_cap
+        severity: medium
+        message: No limitation of liability clause found.
+        when: [{field: liability_cap, op: is_null}]
+      - id: no_termination_for_convenience
+        severity: low
+        message: We cannot terminate for convenience.
+        when: [{field: termination_for_convenience, op: is_false}]
+    clauses:
+      - id: missing_indemnification
+        severity: medium
+        message: No indemnification clause.
+        patterns: ["indemnif"]
+
+  sow:
+    title: Statement of Work
+    detect: ["statement of work", "deliverables", "milestone", "acceptance criteria"]
+    required_fields: [parties, effective_date, contract_value, payment_terms_days]
+    rules: []
+    clauses:
+      - id: missing_acceptance_criteria
+        severity: medium
+        message: No acceptance criteria for deliverables.
+        patterns: ["acceptance criteria", "accept(?:ance|ed) (?:of|by) (?:the )?deliverable"]
+
+  saas:
+    title: SaaS Subscription Agreement
+    detect: ["subscription", "software as a service", "uptime", "service level", "subscription term", "authorized users"]
+    required_fields: [parties, effective_date, term_months, contract_value, liability_cap]
+    rules:
+      - id: missing_liability_cap
+        severity: medium
+        message: No limitation of liability clause found.
+        when: [{field: liability_cap, op: is_null}]
+    clauses:
+      - id: missing_sla
+        severity: low
+        message: No service-level / uptime commitment.
+        patterns: ["uptime", "service level", "availability of \\d"]
+
+  dpa:
+    title: Data Processing Agreement
+    detect: ["data processing", "personal data", "processor", "controller", "sub-processor", "gdpr"]
+    required_fields: [parties, effective_date, governing_law]
+    rules: []
+    clauses:
+      - id: missing_breach_notification
+        severity: high
+        message: No personal-data breach notification obligation.
+        patterns: ["breach notification", "notify .{0,40}(?:personal data )?breach", "personal data breach"]
+      - id: missing_subprocessor_terms
+        severity: medium
+        message: No sub-processor controls.
+        patterns: ["sub-?processor"]
+
+  employment:
+    title: Employment Agreement
+    detect: ["employment agreement", "employee", "employer", "base salary", "at-will", "benefits"]
+    required_fields: [parties, effective_date, governing_law]
+    rules: []
+    clauses:
+      - id: missing_ip_assignment
+        severity: high
+        message: No assignment of inventions / intellectual property to the company.
+        patterns: ["assign.{0,60}(?:intellectual property|inventions)", "work made for hire"]
+
+  contractor:
+    title: Independent Contractor Agreement
+    detect: ["independent contractor", "contractor", "consulting services", "hourly rate", "not an employee"]
+    required_fields: [parties, effective_date, governing_law, payment_terms_days]
+    rules: []
+    clauses:
+      - id: missing_ip_assignment
+        severity: high
+        message: No assignment of work product / IP to the company.
+        patterns: ["assign.{0,60}(?:intellectual property|work product|inventions)", "work made for hire"]
+      - id: missing_contractor_status
+        severity: medium
+        message: Contractor status (not an employee) is not stated.
+        patterns: ["independent contractor", "not an employee"]
+
+  lease:
+    title: Commercial Lease
+    detect: ["lease", "landlord", "tenant", "premises", "rent", "security deposit"]
+    required_fields: [parties, effective_date, term_months, contract_value]
+    rules: []
+    clauses:
+      - id: missing_security_deposit_terms
+        severity: low
+        message: Security deposit terms not stated.
+        patterns: ["security deposit"]

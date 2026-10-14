@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Sign: {{ contract.title }}{% endblock %}
+{% block body %}
+<div class="card">
+  <h1>{{ contract.title }}</h1>
+  <p class="muted">Hello {{ recipient.name }}. Please review the agreement below. Signing order:
+    {% for o in others %}{{ o.order }}. {{ o.name }} ({{ o.status }}){% if not loop.last %} → {% endif %}{% endfor %}</p>
+  <div class="muted small">Document fingerprint (SHA-256): {{ envelope.doc_sha256 }}</div>
+</div>
+<div class="grid">
+  <div class="card"><pre class="doc">{{ contract.text }}</pre></div>
+  <div class="card">
+    <h2>Sign</h2>
+    {% if error %}<p style="color:#c62828">{{ error }}</p>{% endif %}
+    {% if recipient.status in ('signed', 'declined') %}
+      <p>You have already {{ recipient.status }} this agreement.</p>
+    {% else %}
+    <form method="post">
+      <input type="hidden" name="doc_sha256" value="{{ envelope.doc_sha256 }}">
+      <p><label>Type your full name to sign<br><input name="typed_name" required size="28" placeholder="{{ recipient.name }}"></label></p>
+      <p><label><input type="checkbox" name="consent"> I agree to sign electronically and that my typed name is my legal signature.</label></p>
+      <button>Sign agreement</button>
+    </form>
+    <form method="post" action="/sign/{{ token }}/decline" style="margin-top:18px">
+      <input name="reason" placeholder="reason (optional)" size="22"> <button class="ghost">Decline</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
